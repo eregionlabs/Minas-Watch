@@ -332,11 +332,23 @@ h1 {
 
 @media (max-width: 960px) {
   .dashboard {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .headlines-panel {
+    order: 1;
   }
 
   .controls-panel {
+    order: 2;
     position: static;
+  }
+
+  .news-list {
+    list-style: none;
+    padding-left: 0;
   }
 }
 
