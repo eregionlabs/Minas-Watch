@@ -379,15 +379,23 @@ function setStatus(label, className) {
   statusBadge.classList.add(className);
 }
 
-function setErrors(errors) {
-  if (!errors || errors.length === 0) {
+function setErrors(errors, payload = null) {
+  const errorList = Array.isArray(errors) ? errors : [];
+  const feedCount = payload?.feeds?.length ?? state.feeds.length ?? 0;
+  const itemCount = Number.isFinite(payload?.count) ? payload.count : state.items.length;
+
+  const catastrophic =
+    itemCount <= 0 ||
+    (feedCount > 0 && errorList.length >= Math.max(3, Math.ceil(feedCount * 0.8)));
+
+  if (!catastrophic) {
     errorBanner.classList.add("hidden");
     errorBanner.textContent = "";
     return;
   }
 
   errorBanner.classList.remove("hidden");
-  errorBanner.textContent = "Some feeds failed to refresh. Showing latest available headlines.";
+  errorBanner.textContent = "Live feed is severely degraded right now. Retrying source refresh.";
 }
 
 function renderFeedControls() {
@@ -514,7 +522,7 @@ async function loadInitial() {
   }
 
   const payload = await response.json();
-  setErrors(payload.errors);
+  setErrors(payload.errors, payload);
   applyPayload(payload);
 }
 
@@ -524,7 +532,7 @@ function connectSse() {
 
   stream.addEventListener("news", (event) => {
     const payload = JSON.parse(event.data);
-    setErrors(payload.errors);
+    setErrors(payload.errors, payload);
     applyPayload(payload);
     setStatus("Live", "connected");
   });
