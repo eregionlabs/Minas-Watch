@@ -170,12 +170,34 @@ const preferredOutletsInput = document.querySelector("#preferred-outlets");
 const preferredKeywordsInput = document.querySelector("#preferred-keywords");
 const firstHandOnlyToggle = document.querySelector("#first-hand-only");
 const resetControlsButton = document.querySelector("#reset-controls");
+const dashboardRoot = document.querySelector(".dashboard");
+const controlsPanel = document.querySelector(".controls-panel");
+const headlinesPanel = document.querySelector(".headlines-panel");
 
 function savePreferences() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.preferences));
   } catch {
     // Ignore persistence failures (private mode / storage disabled).
+  }
+}
+
+function applyResponsivePanelOrder() {
+  if (!dashboardRoot || !controlsPanel || !headlinesPanel) {
+    return;
+  }
+
+  const mobile = window.matchMedia("(max-width: 960px)").matches;
+
+  if (mobile) {
+    if (dashboardRoot.firstElementChild !== headlinesPanel) {
+      dashboardRoot.prepend(headlinesPanel);
+    }
+    return;
+  }
+
+  if (dashboardRoot.firstElementChild !== controlsPanel) {
+    dashboardRoot.prepend(controlsPanel);
   }
 }
 
@@ -541,6 +563,10 @@ if (firstHandOnlyToggle) {
 resetControlsButton.addEventListener("click", () => {
   resetPreferences();
 });
+
+applyResponsivePanelOrder();
+window.addEventListener("resize", applyResponsivePanelOrder);
+window.addEventListener("orientationchange", applyResponsivePanelOrder);
 
 renderFeedControls();
 renderHeadlines();

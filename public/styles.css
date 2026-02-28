@@ -98,6 +98,8 @@ h1 {
   border-radius: 12px;
   box-shadow: var(--shadow);
   padding: 1.1rem;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .dashboard {
@@ -203,10 +205,17 @@ h1 {
   align-items: flex-start;
   font-size: 0.9rem;
   color: #24313f;
+  min-width: 0;
 }
 
 .feed-toggle input {
   margin-top: 0.2rem;
+}
+
+.feed-toggle span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .reset-button {

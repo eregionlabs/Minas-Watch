@@ -4,7 +4,37 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Minas Watch | War News Stream</title>
-    <link rel="stylesheet" href="/styles.css?v=20260228m2" />
+    <link rel="stylesheet" href="/styles.css?v=20260228m3" />
+    <style>
+      @media (max-width: 960px) {
+        .dashboard {
+          display: grid !important;
+          grid-template-columns: 1fr !important;
+          grid-template-areas:
+            "headlines"
+            "controls" !important;
+        }
+        .headlines-panel {
+          grid-area: headlines !important;
+        }
+        .controls-panel {
+          grid-area: controls !important;
+          position: static !important;
+        }
+      }
+      .news-list {
+        list-style: none !important;
+        padding-left: 0 !important;
+        margin-left: 0 !important;
+      }
+      .headline,
+      .headline a,
+      .meta {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+    </style>
   </head>
   <body>
     <main class="app">
@@ -76,7 +106,7 @@
         </aside>
       </section>
     </main>
-    <script src="/config.js?v=20260228m2"></script>
-    <script type="module" src="/app.js?v=20260228m2"></script>
+    <script src="/config.js?v=20260228m3"></script>
+    <script type="module" src="/app.js?v=20260228m3"></script>
   </body>
 </html>
