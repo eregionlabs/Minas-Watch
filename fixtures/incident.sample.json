@@ -1,0 +1,22 @@
+{
+  "id": "33333333-3333-4333-8333-333333333333",
+  "title": "Palm Jumeirah smoke reports and possible intercept debris",
+  "summary": "Multiple local reports indicate smoke near hotels on Palm Jumeirah. Initial media suggests aerial intercept debris, pending official confirmation.",
+  "status": "LIKELY",
+  "severity": "P2",
+  "confidence_score": 67.5,
+  "location": {
+    "label": "Palm Jumeirah, Dubai",
+    "lat": 25.1124,
+    "lon": 55.139
+  },
+  "first_seen_at": "2026-02-28T15:43:08Z",
+  "last_updated_at": "2026-02-28T15:50:00Z",
+  "signal_ids": [
+    "22222222-2222-4222-8222-222222222222"
+  ],
+  "reason_codes": [
+    "MULTI_SOURCE_CORROBORATION"
+  ],
+  "tags": ["uae", "urban", "developing"]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "44444444-4444-4444-8444-444444444444",
+  "incident_id": "33333333-3333-4333-8333-333333333333",
+  "signal_id": "22222222-2222-4222-8222-222222222222",
+  "captured_at": "2026-02-28T15:44:05Z",
+  "media_hash": "sha256:8a5f670a857a3f89d3b4ef75cc1666406c89f6ea6bca2e89b8f82631a5fd01f3",
+  "verification_flags": {
+    "reverse_match_checked": true,
+    "timestamp_consistent": true,
+    "geolocation_plausible": true,
+    "is_repost": false
+  },
+  "notes": "Landmark geometry and lighting in frame are consistent with Palm Jumeirah evening footage."
+}

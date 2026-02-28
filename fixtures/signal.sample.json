@@ -1,0 +1,36 @@
+{
+  "id": "22222222-2222-4222-8222-222222222222",
+  "source_id": "11111111-1111-4111-8111-111111111111",
+  "external_id": "x-2027771559046484169",
+  "layer": "A",
+  "event_time": "2026-02-28T15:43:08Z",
+  "ingested_at": "2026-02-28T15:44:02Z",
+  "text": "Reports of smoke and possible intercept debris over Palm Jumeirah with footage from multiple local accounts.",
+  "translated_text": "Reports of smoke and possible intercept debris over Palm Jumeirah with footage from multiple local accounts.",
+  "language": "en",
+  "location": {
+    "label": "Palm Jumeirah, Dubai",
+    "lat": 25.1124,
+    "lon": 55.139,
+    "precision": "approximate"
+  },
+  "entities": {
+    "places": ["Dubai", "Palm Jumeirah"],
+    "actors": ["UAE Civil Defense"],
+    "assets": ["interceptor", "airspace"],
+    "topics": ["missile", "fire", "urban incident"]
+  },
+  "media": [
+    {
+      "type": "video",
+      "url": "https://video.example.com/evidence/clip-001.mp4",
+      "hash": "sha256:8a5f670a857a3f89d3b4ef75cc1666406c89f6ea6bca2e89b8f82631a5fd01f3",
+      "metadata": {
+        "duration_s": 21,
+        "width": 364,
+        "height": 640
+      }
+    }
+  ],
+  "raw_ref": "s3://minas-watch-raw/signals/2026/02/28/22222222-2222-4222-8222-222222222222.json"
+}

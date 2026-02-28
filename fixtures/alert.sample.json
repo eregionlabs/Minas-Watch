@@ -1,0 +1,13 @@
+{
+  "id": "55555555-5555-4555-8555-555555555555",
+  "incident_id": "33333333-3333-4333-8333-333333333333",
+  "severity": "P2",
+  "trigger_reason": "CONFIDENCE_INCREASE",
+  "status": "SENT",
+  "delivery": {
+    "channels": ["telegram", "webhook"],
+    "attempt_count": 1,
+    "last_attempt_at": "2026-02-28T15:50:05Z"
+  },
+  "created_at": "2026-02-28T15:50:03Z"
+}

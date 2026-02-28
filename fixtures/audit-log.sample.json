@@ -1,0 +1,23 @@
+{
+  "id": "66666666-6666-4666-8666-666666666666",
+  "timestamp": "2026-02-28T15:50:00Z",
+  "actor": {
+    "type": "system",
+    "id": "scoring-service"
+  },
+  "action": "STATUS_CHANGE",
+  "entity_type": "incident",
+  "entity_id": "33333333-3333-4333-8333-333333333333",
+  "before": {
+    "status": "UNVERIFIED",
+    "confidence_score": 41.2
+  },
+  "after": {
+    "status": "LIKELY",
+    "confidence_score": 67.5
+  },
+  "reason": "Second independent source and media verification flags increased confidence.",
+  "reason_codes": [
+    "MULTI_SOURCE_CORROBORATION"
+  ]
+}

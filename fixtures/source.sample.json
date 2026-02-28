@@ -1,0 +1,21 @@
+{
+  "id": "11111111-1111-4111-8111-111111111111",
+  "name": "Gulf Local Wire Monitor",
+  "handle": "@gulfwire_monitor",
+  "url": "https://example.com/gulfwire-monitor",
+  "type": "journalist",
+  "platform": "x",
+  "regions": ["UAE", "Gulf"],
+  "languages": ["en", "ar"],
+  "topics": ["airspace", "civil-defense", "infrastructure"],
+  "reliability_score": 74.3,
+  "stats": {
+    "total_claims": 430,
+    "confirmed_claims": 312,
+    "false_positive_claims": 41,
+    "avg_latency_seconds": 514
+  },
+  "active": true,
+  "created_at": "2026-02-28T15:00:00Z",
+  "updated_at": "2026-02-28T15:00:00Z"
+}
