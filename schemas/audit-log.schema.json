@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://minaswatch.dev/schemas/audit-log.schema.json",
+  "title": "AuditLog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "timestamp",
+    "actor",
+    "action",
+    "entity_type",
+    "entity_id",
+    "reason"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "system",
+            "analyst",
+            "admin"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 120
+        }
+      }
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "CREATE",
+        "UPDATE",
+        "STATUS_CHANGE",
+        "SCORE_CHANGE",
+        "ALERT_SENT",
+        "ALERT_SUPPRESSED",
+        "MANUAL_OVERRIDE"
+      ]
+    },
+    "entity_type": {
+      "type": "string",
+      "enum": [
+        "source",
+        "signal",
+        "incident",
+        "evidence",
+        "alert"
+      ]
+    },
+    "entity_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "before": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "after": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 80
+      }
+    }
+  }
+}

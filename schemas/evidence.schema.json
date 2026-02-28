@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://minaswatch.dev/schemas/evidence.schema.json",
+  "title": "Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "incident_id",
+    "signal_id",
+    "captured_at",
+    "media_hash",
+    "verification_flags"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "incident_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "signal_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "media_hash": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 128
+    },
+    "verification_flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reverse_match_checked",
+        "timestamp_consistent",
+        "geolocation_plausible",
+        "is_repost"
+      ],
+      "properties": {
+        "reverse_match_checked": {
+          "type": "boolean"
+        },
+        "timestamp_consistent": {
+          "type": "boolean"
+        },
+        "geolocation_plausible": {
+          "type": "boolean"
+        },
+        "is_repost": {
+          "type": "boolean"
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  }
+}

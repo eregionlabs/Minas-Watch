@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://minaswatch.dev/schemas/signal.schema.json",
+  "title": "Signal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "source_id",
+    "layer",
+    "event_time",
+    "ingested_at",
+    "text",
+    "language",
+    "location",
+    "entities",
+    "media",
+    "raw_ref"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "external_id": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "layer": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    "event_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ingested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20000
+    },
+    "translated_text": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "lat",
+        "lon",
+        "precision"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "lon": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "precision": {
+          "type": "string",
+          "enum": [
+            "exact",
+            "approximate",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "entities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "places",
+        "actors",
+        "assets",
+        "topics"
+      ],
+      "properties": {
+        "places": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "actors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        }
+      }
+    },
+    "media": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "url",
+          "hash"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video",
+              "audio",
+              "document"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "hash": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          },
+          "metadata": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "raw_ref": {
+      "type": "string",
+      "description": "Immutable object store reference for original payload"
+    }
+  }
+}

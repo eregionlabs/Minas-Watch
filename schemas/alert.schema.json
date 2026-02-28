@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://minaswatch.dev/schemas/alert.schema.json",
+  "title": "Alert",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "incident_id",
+    "severity",
+    "trigger_reason",
+    "status",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "incident_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "P1",
+        "P2",
+        "P3"
+      ]
+    },
+    "trigger_reason": {
+      "type": "string",
+      "enum": [
+        "NEW_INCIDENT",
+        "CONFIDENCE_INCREASE",
+        "SEVERITY_INCREASE",
+        "OFFICIAL_CONFIRMATION",
+        "MANUAL_ESCALATION"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "QUEUED",
+        "SENT",
+        "FAILED",
+        "SUPPRESSED"
+      ]
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "channels",
+        "attempt_count"
+      ],
+      "properties": {
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "telegram",
+              "slack",
+              "email",
+              "webhook"
+            ]
+          }
+        },
+        "attempt_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last_attempt_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "error": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
