@@ -554,7 +554,9 @@ async function fetchOneFeed(feed, timeoutMs) {
   try {
     const response = await fetch(feed.feedUrl, {
       headers: {
-        "user-agent": "MinasWatch/0.1 (+rss)"
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.1",
+        "accept-language": "en-US,en;q=0.9"
       },
       signal: controller.signal
     });
@@ -624,6 +626,53 @@ function dedupeAndSort(items) {
 
     return a.id.localeCompare(b.id);
   });
+}
+
+function applySourceDiversity(items, limit) {
+  if (items.length <= limit) {
+    return items;
+  }
+
+  const perTypeCap = {
+    official: Math.max(8, Math.floor(limit * 0.5)),
+    osint_social: Math.max(8, Math.floor(limit * 0.35)),
+    sensor: Math.max(4, Math.floor(limit * 0.2)),
+    wire: Math.max(4, Math.floor(limit * 0.2))
+  };
+
+  const selected = [];
+  const usedIds = new Set();
+  const counts = { official: 0, osint_social: 0, sensor: 0, wire: 0 };
+
+  for (const item of items) {
+    const type = SOURCE_TYPES.has(item.sourceType) ? item.sourceType : "wire";
+    if (selected.length >= limit) {
+      break;
+    }
+
+    if (counts[type] >= perTypeCap[type]) {
+      continue;
+    }
+
+    selected.push(item);
+    usedIds.add(item.id);
+    counts[type] += 1;
+  }
+
+  if (selected.length < limit) {
+    for (const item of items) {
+      if (selected.length >= limit) {
+        break;
+      }
+      if (usedIds.has(item.id)) {
+        continue;
+      }
+      selected.push(item);
+      usedIds.add(item.id);
+    }
+  }
+
+  return selected;
 }
 
 function feedSnapshot(feed) {
@@ -716,7 +765,7 @@ export function createNewsService() {
       }
 
       if (mergedItems.length > 0) {
-        const nextItems = dedupeAndSort(mergedItems).slice(0, maxItems);
+        const nextItems = applySourceDiversity(dedupeAndSort(mergedItems), maxItems);
         const previousIds = items.map((item) => item.id).join(",");
         const nextIds = nextItems.map((item) => item.id).join(",");
         items = nextItems;
