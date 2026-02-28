@@ -6,6 +6,13 @@ const DEFAULT_FEEDS = [
   "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml"
 ];
 
+const HOST_LABEL_OVERRIDES = {
+  bbci: "BBC",
+  bbc: "BBC"
+};
+
+const HOST_PART_BLACKLIST = new Set(["www", "feeds", "feed", "news", "rss", "com", "net", "org", "co", "uk"]);
+
 const HTML_ENTITIES = {
   amp: "&",
   apos: "'",
@@ -30,6 +37,66 @@ function parseFeedList(rawFeeds) {
     .filter(Boolean);
 
   return feeds.length > 0 ? feeds : DEFAULT_FEEDS;
+}
+
+function decodeUrlPart(value) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    return decodeURIComponent(value.replace(/\+/g, " "));
+  } catch {
+    return value.replace(/\+/g, " ");
+  }
+}
+
+function toLabelCase(value) {
+  return value
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => {
+      if (/^[A-Z0-9]{2,}$/.test(word)) {
+        return word;
+      }
+
+      const lower = word.toLowerCase();
+      return `${lower[0]?.toUpperCase() ?? ""}${lower.slice(1)}`;
+    })
+    .join(" ");
+}
+
+function buildFeedLabel(feedUrl) {
+  if (!feedUrl) {
+    return "Feed";
+  }
+
+  try {
+    const url = new URL(feedUrl);
+    const hostname = url.hostname.replace(/^www\./i, "");
+
+    if (hostname.includes("news.google.")) {
+      const query = toLabelCase(decodeUrlPart(url.searchParams.get("q") || ""));
+      return query ? `Google News: ${query}` : "Google News";
+    }
+
+    const hostParts = hostname.split(".");
+    const hostToken = hostParts.find((part) => !HOST_PART_BLACKLIST.has(part.toLowerCase())) || hostParts[0];
+    const baseLabel = HOST_LABEL_OVERRIDES[hostToken.toLowerCase()] || toLabelCase(hostToken || hostname);
+    const pathTokens = url.pathname
+      .split("/")
+      .filter(Boolean)
+      .map((part) => toLabelCase(decodeUrlPart(part)))
+      .filter((part) => part && !/^rss(?:\.xml)?$/i.test(part));
+    const pathToken = pathTokens[pathTokens.length - 1];
+
+    return [baseLabel, pathToken].filter(Boolean).join(" - ");
+  } catch {
+    return toLabelCase(feedUrl);
+  }
 }
 
 function decodeEntities(value) {
@@ -138,7 +205,7 @@ function buildId(parts) {
   return createHash("sha1").update(parts.join("|")).digest("hex").slice(0, 16);
 }
 
-function toItem({ title, link, source, published, feedUrl, guid }) {
+function toItem({ title, link, source, published, feedUrl, feedLabel, guid }) {
   const safeTitle = cleanText(title);
   const safeLink = normalizeUrl(cleanText(link));
   const safeSource = cleanText(source) || "Unknown";
@@ -156,11 +223,12 @@ function toItem({ title, link, source, published, feedUrl, guid }) {
     source: safeSource,
     publishedAt,
     publishedTs,
-    feedUrl
+    feedUrl,
+    feedLabel
   };
 }
 
-function parseRss(xml, feedUrl) {
+function parseRss(xml, feedUrl, feedLabel) {
   const channelBlock = xml.match(/<channel(?:\s[^>]*)?>([\s\S]*?)<\/channel>/i)?.[0] ?? "";
   const channelTitle = extractTagText(channelBlock, "title") || "RSS Feed";
   const blocks = extractBlocks(xml, "item");
@@ -173,13 +241,14 @@ function parseRss(xml, feedUrl) {
         source: extractTagText(block, "source") || channelTitle,
         published: extractTagText(block, "pubDate"),
         guid: extractTagText(block, "guid"),
-        feedUrl
+        feedUrl,
+        feedLabel
       })
     )
     .filter(Boolean);
 }
 
-function parseAtom(xml, feedUrl) {
+function parseAtom(xml, feedUrl, feedLabel) {
   const feedTitle = extractTagText(xml, "title") || "Atom Feed";
   const entries = extractBlocks(xml, "entry");
 
@@ -191,29 +260,30 @@ function parseAtom(xml, feedUrl) {
         source: extractTagText(entry, "source") || feedTitle,
         published: extractTagText(entry, "updated") || extractTagText(entry, "published"),
         guid: extractTagText(entry, "id"),
-        feedUrl
+        feedUrl,
+        feedLabel
       })
     )
     .filter(Boolean);
 }
 
-function parseFeed(xml, feedUrl) {
+function parseFeed(xml, feedUrl, feedLabel) {
   if (!xml || typeof xml !== "string") {
     return [];
   }
 
   if (/<rss\b/i.test(xml) || /<channel\b/i.test(xml)) {
-    return parseRss(xml, feedUrl);
+    return parseRss(xml, feedUrl, feedLabel);
   }
 
   if (/<feed\b/i.test(xml) && /<entry\b/i.test(xml)) {
-    return parseAtom(xml, feedUrl);
+    return parseAtom(xml, feedUrl, feedLabel);
   }
 
   return [];
 }
 
-async function fetchOneFeed(feedUrl, timeoutMs) {
+async function fetchOneFeed(feedUrl, feedLabel, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -230,7 +300,7 @@ async function fetchOneFeed(feedUrl, timeoutMs) {
     }
 
     const xml = await response.text();
-    return parseFeed(xml, feedUrl);
+    return parseFeed(xml, feedUrl, feedLabel);
   } finally {
     clearTimeout(timer);
   }
@@ -261,16 +331,22 @@ function dedupeAndSort(items) {
   return output;
 }
 
-function snapshotShape(items, refreshedAt, errors, limit) {
+function snapshotShape(items, refreshedAt, errors, limit, feeds) {
   return {
     refreshedAt: refreshedAt ? new Date(refreshedAt).toISOString() : null,
     count: Math.min(limit, items.length),
+    feeds: feeds.map((feed) => ({
+      feedUrl: feed.feedUrl,
+      feedLabel: feed.feedLabel
+    })),
     items: items.slice(0, limit).map((item) => ({
       id: item.id,
       title: item.title,
       link: item.link,
       source: item.source,
-      publishedAt: item.publishedAt
+      publishedAt: item.publishedAt,
+      feedUrl: item.feedUrl,
+      feedLabel: item.feedLabel
     })),
     errors
   };
@@ -281,7 +357,11 @@ export function createNewsService() {
   const maxItems = toPositiveInteger(process.env.NEWS_MAX_ITEMS, 50);
   const fetchTimeoutMs = toPositiveInteger(process.env.NEWS_FETCH_TIMEOUT_MS, 7000);
   const cacheTtlMs = toPositiveInteger(process.env.NEWS_CACHE_TTL_MS, refreshMs);
-  const feeds = parseFeedList(process.env.NEWS_FEEDS);
+  const feedUrls = parseFeedList(process.env.NEWS_FEEDS);
+  const feedCatalog = feedUrls.map((feedUrl) => ({
+    feedUrl,
+    feedLabel: buildFeedLabel(feedUrl)
+  }));
 
   let timer = null;
   let refreshing = null;
@@ -292,7 +372,7 @@ export function createNewsService() {
   const listeners = new Set();
 
   function notify() {
-    const snapshot = snapshotShape(items, refreshedAt, lastErrors, maxItems);
+    const snapshot = snapshotShape(items, refreshedAt, lastErrors, maxItems, feedCatalog);
     for (const listener of listeners) {
       listener(snapshot);
     }
@@ -306,20 +386,26 @@ export function createNewsService() {
     lastRefreshAttemptAt = Date.now();
 
     refreshing = (async () => {
-      const results = await Promise.allSettled(feeds.map((feedUrl) => fetchOneFeed(feedUrl, fetchTimeoutMs)));
+      const results = await Promise.allSettled(
+        feedCatalog.map((feed) => fetchOneFeed(feed.feedUrl, feed.feedLabel, fetchTimeoutMs))
+      );
       const nextErrors = [];
       const mergedItems = [];
 
       for (let index = 0; index < results.length; index += 1) {
         const result = results[index];
-        const feedUrl = feeds[index];
+        const feed = feedCatalog[index];
 
         if (result.status === "fulfilled") {
           mergedItems.push(...result.value);
           continue;
         }
 
-        nextErrors.push({ feedUrl, message: result.reason?.message || "feed_fetch_failed" });
+        nextErrors.push({
+          feedUrl: feed.feedUrl,
+          feedLabel: feed.feedLabel,
+          message: result.reason?.message || "feed_fetch_failed"
+        });
       }
 
       if (mergedItems.length > 0) {
@@ -334,14 +420,14 @@ export function createNewsService() {
           notify();
         }
 
-        return snapshotShape(items, refreshedAt, lastErrors, maxItems);
+        return snapshotShape(items, refreshedAt, lastErrors, maxItems, feedCatalog);
       }
 
       if (nextErrors.length > 0) {
         lastErrors = nextErrors;
       }
 
-      return snapshotShape(items, refreshedAt, lastErrors, maxItems);
+      return snapshotShape(items, refreshedAt, lastErrors, maxItems, feedCatalog);
     })().finally(() => {
       refreshing = null;
     });
@@ -359,7 +445,7 @@ export function createNewsService() {
       refresh().catch(() => {});
     }
 
-    return snapshotShape(items, refreshedAt, lastErrors, Math.min(limit, maxItems));
+    return snapshotShape(items, refreshedAt, lastErrors, Math.min(limit, maxItems), feedCatalog);
   }
 
   function subscribe(listener) {
@@ -384,7 +470,8 @@ export function createNewsService() {
   }
 
   return {
-    feeds,
+    feeds: feedUrls,
+    feedCatalog,
     maxItems,
     getLatest,
     refresh,

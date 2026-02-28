@@ -19,13 +19,52 @@
         </div>
       </header>
 
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Top Headlines</h2>
-          <span id="headline-count">0 items</span>
-        </div>
-        <p id="error-banner" class="error-banner hidden"></p>
-        <ol id="news-list" class="news-list"></ol>
+      <section class="dashboard">
+        <aside class="panel controls-panel">
+          <div class="panel-head">
+            <h2>Source Control</h2>
+          </div>
+
+          <div class="control-group">
+            <h3>Active Feeds</h3>
+            <div id="feed-toggles" class="feed-toggles"></div>
+          </div>
+
+          <div class="control-group">
+            <h3><label for="preferred-outlets">Preferred Outlets</label></h3>
+            <p class="control-note">Comma-separated source names</p>
+            <input
+              id="preferred-outlets"
+              class="control-input"
+              type="text"
+              placeholder="BBC, Reuters, AP"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="control-group">
+            <h3><label for="preferred-keywords">Preferred Regions / Keywords</label></h3>
+            <p class="control-note">Comma-separated terms used to boost title matches</p>
+            <input
+              id="preferred-keywords"
+              class="control-input"
+              type="text"
+              placeholder="Gaza, Tehran, cyber"
+              autocomplete="off"
+            />
+          </div>
+
+          <button id="reset-controls" class="reset-button" type="button">Reset preferences</button>
+        </aside>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Top Headlines</h2>
+            <span id="headline-count">0 items</span>
+          </div>
+          <p id="error-banner" class="error-banner hidden"></p>
+          <ol id="news-list" class="news-list"></ol>
+        </section>
       </section>
     </main>
     <script type="module" src="/app.js"></script>

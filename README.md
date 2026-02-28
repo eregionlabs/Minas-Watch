@@ -40,6 +40,16 @@ curl -s http://localhost:8787/validate/signal \
 curl -s http://localhost:8787/api/news | jq
 ```
 
+## Source Control Panel
+The UI now includes a `Source Control` panel (left side on desktop, top on mobile) with client-side controls:
+
+- `Active Feeds`: toggle each feed on/off using feed labels from `/api/news`.
+- `Preferred Outlets`: comma-separated source names that boost matching headlines.
+- `Preferred Regions / Keywords`: comma-separated terms that boost headline title matches.
+- `Reset preferences`: restores defaults (all feeds active, no boosts).
+
+Ranking is applied instantly in-browser (no reload): items are reordered by preference score, then by recency as a tie-breaker. Preferences persist in `localStorage`.
+
 ## Runtime configuration
 Copy `.env.example` to `.env` and adjust as needed.
 
