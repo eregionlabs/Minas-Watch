@@ -1,5 +1,19 @@
 const STORAGE_KEY = "minas-watch.source-controls.v1";
 
+const API_BASE = (() => {
+  const queryBase = new URLSearchParams(window.location.search).get("api");
+  const configuredBase = queryBase || window.MINAS_WATCH_API_BASE || "";
+  return configuredBase.replace(/\/$/, "");
+})();
+
+function apiUrl(path) {
+  if (!API_BASE) {
+    return path;
+  }
+
+  return `${API_BASE}${path}`;
+}
+
 const SOURCE_TYPE_LABELS = {
   official: "Official",
   osint_social: "OSINT Social",
@@ -470,7 +484,7 @@ function resetPreferences() {
 }
 
 async function loadInitial() {
-  const response = await fetch("/api/news");
+  const response = await fetch(apiUrl("/api/news"));
   if (!response.ok) {
     throw new Error(`Initial news load failed: ${response.status}`);
   }
@@ -482,7 +496,7 @@ async function loadInitial() {
 
 function connectSse() {
   setStatus("Connecting...", "connecting");
-  const stream = new EventSource("/api/news/stream");
+  const stream = new EventSource(apiUrl("/api/news/stream"));
 
   stream.addEventListener("news", (event) => {
     const payload = JSON.parse(event.data);
@@ -538,7 +552,7 @@ loadInitial()
   .catch(() => {
     setStatus("Offline", "disconnected");
     errorBanner.classList.remove("hidden");
-    errorBanner.textContent = "Live API is unavailable on this host. If you are using GitHub Pages, deploy the Node API separately for live headlines.";
+    errorBanner.textContent = "Live API is unavailable on this host. Set window.MINAS_WATCH_API_BASE in config.js (or ?api=https://...) to connect GitHub Pages to a deployed API.";
     renderHeadlines();
   })
   .finally(() => {

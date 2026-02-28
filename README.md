@@ -27,9 +27,13 @@ This repo includes static files at:
 - `/index.html` (root Pages source)
 - `/docs/index.html` (docs Pages source)
 
-GitHub Pages renders the UI shell only.
-Live headlines require the Node API endpoints (`/api/news` and `/api/news/stream`).
-On GitHub Pages alone, the app shows an offline notice unless you deploy the backend separately.
+GitHub Pages renders the UI shell and loads API origin from `config.js`.
+Live headlines require the Node API endpoints (`/api/news` and `/api/news/stream`) hosted separately.
+
+Current temporary API host:
+- `https://avoiding-decisions-months-varying.trycloudflare.com` (Cloudflare Quick Tunnel; ephemeral)
+
+To point Pages at a new backend, update `config.js` (`window.MINAS_WATCH_API_BASE`).
 
 Core endpoints:
 - `GET /health`
