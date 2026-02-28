@@ -1,14 +1,180 @@
 import { createHash } from "node:crypto";
 
-const DEFAULT_FEEDS = [
-  "https://news.google.com/rss/search?q=Israel+Iran+war&hl=en-US&gl=US&ceid=US:en",
-  "https://news.google.com/rss/search?q=Israel+Iran+conflict&hl=en-US&gl=US&ceid=US:en",
-  "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml"
+const SOURCE_TYPES = new Set(["official", "osint_social", "sensor", "wire"]);
+
+const SOURCE_TYPE_CLASS_ORDER = {
+  official: 0,
+  osint_social: 1,
+  sensor: 2,
+  wire: 3
+};
+
+const FIRST_HAND_CLASS_BOOST = 2;
+
+const SOURCE_CATALOG = [
+  {
+    feedUrl: "https://nitter.net/idfonline/rss",
+    feedLabel: "IDF (X via Nitter)",
+    sourceType: "official",
+    regionTags: ["israel", "military", "middle-east"],
+    trustTier: 5,
+    firstHand: true,
+    basePriority: 98
+  },
+  {
+    feedUrl: "https://nitter.net/IsraelMFA/rss",
+    feedLabel: "Israel MFA (X via Nitter)",
+    sourceType: "official",
+    regionTags: ["israel", "diplomacy", "middle-east"],
+    trustTier: 5,
+    firstHand: true,
+    basePriority: 94
+  },
+  {
+    feedUrl: "https://nitter.net/CENTCOM/rss",
+    feedLabel: "US CENTCOM (X via Nitter)",
+    sourceType: "official",
+    regionTags: ["us", "military", "middle-east"],
+    trustTier: 5,
+    firstHand: true,
+    basePriority: 92
+  },
+  {
+    feedUrl: "https://nitter.net/Iran_UN/rss",
+    feedLabel: "Iran UN Mission (X via Nitter)",
+    sourceType: "official",
+    regionTags: ["iran", "diplomacy", "middle-east"],
+    trustTier: 4,
+    firstHand: true,
+    basePriority: 90
+  },
+  {
+    feedUrl: "https://nitter.net/iaeaorg/rss",
+    feedLabel: "IAEA (X via Nitter)",
+    sourceType: "official",
+    regionTags: ["nuclear", "iran", "middle-east"],
+    trustTier: 5,
+    firstHand: true,
+    basePriority: 88
+  },
+  {
+    feedUrl: "https://www.unocha.org/rss.xml",
+    feedLabel: "UN OCHA Updates",
+    sourceType: "official",
+    regionTags: ["humanitarian", "middle-east"],
+    trustTier: 4,
+    firstHand: true,
+    basePriority: 84
+  },
+  {
+    feedUrl: "https://nitter.net/sentdefender/rss",
+    feedLabel: "SentDefender (X via Nitter)",
+    sourceType: "osint_social",
+    regionTags: ["osint", "middle-east", "breaking"],
+    trustTier: 3,
+    firstHand: true,
+    basePriority: 82
+  },
+  {
+    feedUrl: "https://nitter.net/ELINTNews/rss",
+    feedLabel: "ELINT News (X via Nitter)",
+    sourceType: "osint_social",
+    regionTags: ["osint", "signals", "middle-east"],
+    trustTier: 3,
+    firstHand: true,
+    basePriority: 80
+  },
+  {
+    feedUrl: "https://nitter.net/Osinttechnical/rss",
+    feedLabel: "OSINTtechnical (X via Nitter)",
+    sourceType: "osint_social",
+    regionTags: ["osint", "battlefield", "middle-east"],
+    trustTier: 3,
+    firstHand: true,
+    basePriority: 78
+  },
+  {
+    feedUrl: "https://nitter.net/AuroraIntel/rss",
+    feedLabel: "Aurora Intel (X via Nitter)",
+    sourceType: "osint_social",
+    regionTags: ["osint", "breaking", "middle-east"],
+    trustTier: 2,
+    firstHand: true,
+    basePriority: 76
+  },
+  {
+    feedUrl: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.atom",
+    feedLabel: "USGS Earthquakes (All Hour)",
+    sourceType: "sensor",
+    regionTags: ["sensor", "seismic", "global"],
+    trustTier: 5,
+    firstHand: true,
+    basePriority: 72
+  },
+  {
+    feedUrl: "https://news.google.com/rss/search?q=Israel+Iran+war&hl=en-US&gl=US&ceid=US:en",
+    feedLabel: "Google News: Israel Iran War",
+    sourceType: "wire",
+    regionTags: ["middle-east", "context"],
+    trustTier: 3,
+    firstHand: false,
+    basePriority: 38
+  },
+  {
+    feedUrl: "https://news.google.com/rss/search?q=Israel+Iran+conflict&hl=en-US&gl=US&ceid=US:en",
+    feedLabel: "Google News: Israel Iran Conflict",
+    sourceType: "wire",
+    regionTags: ["middle-east", "context"],
+    trustTier: 3,
+    firstHand: false,
+    basePriority: 36
+  },
+  {
+    feedUrl: "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml",
+    feedLabel: "BBC - Middle East",
+    sourceType: "wire",
+    regionTags: ["middle-east", "context"],
+    trustTier: 4,
+    firstHand: false,
+    basePriority: 34
+  },
+  {
+    feedUrl: "http://feeds.reuters.com/Reuters/worldNews",
+    feedLabel: "Reuters - World News",
+    sourceType: "wire",
+    regionTags: ["world", "context"],
+    trustTier: 4,
+    firstHand: false,
+    basePriority: 32
+  },
+  {
+    feedUrl: "https://feeds.apnews.com/rss/apf-topnews",
+    feedLabel: "AP - Top News",
+    sourceType: "wire",
+    regionTags: ["world", "context"],
+    trustTier: 4,
+    firstHand: false,
+    basePriority: 30
+  },
+  {
+    feedUrl: "https://www.aljazeera.com/xml/rss/all.xml",
+    feedLabel: "Al Jazeera - All News",
+    sourceType: "wire",
+    regionTags: ["middle-east", "context"],
+    trustTier: 3,
+    firstHand: false,
+    basePriority: 28
+  }
 ];
 
+const DEFAULT_FEEDS = SOURCE_CATALOG.map((feed) => feed.feedUrl);
+
 const HOST_LABEL_OVERRIDES = {
+  apnews: "AP",
   bbci: "BBC",
-  bbc: "BBC"
+  bbc: "BBC",
+  idfonline: "IDF",
+  israelmfa: "Israel MFA"
 };
 
 const HOST_PART_BLACKLIST = new Set(["www", "feeds", "feed", "news", "rss", "com", "net", "org", "co", "uk"]);
@@ -26,15 +192,74 @@ function toPositiveInteger(raw, fallback) {
   return Number.isInteger(value) && value > 0 ? value : fallback;
 }
 
+function toFiniteNumber(raw, fallback) {
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function clampTrustTier(raw, fallback = 3) {
+  const value = Number(raw);
+  if (!Number.isInteger(value)) {
+    return fallback;
+  }
+
+  if (value < 1) {
+    return 1;
+  }
+
+  if (value > 5) {
+    return 5;
+  }
+
+  return value;
+}
+
+function normalizeRegionTags(raw) {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const seen = new Set();
+  const tags = [];
+
+  for (const value of raw) {
+    if (typeof value !== "string") {
+      continue;
+    }
+
+    const tag = value.trim().toLowerCase();
+    if (!tag || seen.has(tag)) {
+      continue;
+    }
+
+    seen.add(tag);
+    tags.push(tag);
+  }
+
+  return tags;
+}
+
+function normalizeSourceType(raw) {
+  return SOURCE_TYPES.has(raw) ? raw : "wire";
+}
+
 function parseFeedList(rawFeeds) {
   if (!rawFeeds || typeof rawFeeds !== "string") {
     return DEFAULT_FEEDS;
   }
 
-  const feeds = rawFeeds
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
+  const seen = new Set();
+  const feeds = [];
+
+  for (const value of rawFeeds.split(",")) {
+    const feed = value.trim();
+    if (!feed || seen.has(feed)) {
+      continue;
+    }
+
+    seen.add(feed);
+    feeds.push(feed);
+  }
 
   return feeds.length > 0 ? feeds : DEFAULT_FEEDS;
 }
@@ -97,6 +322,42 @@ function buildFeedLabel(feedUrl) {
   } catch {
     return toLabelCase(feedUrl);
   }
+}
+
+function normalizeFeedConfig(rawFeed) {
+  const feedUrl = typeof rawFeed?.feedUrl === "string" ? rawFeed.feedUrl.trim() : "";
+  const sourceType = normalizeSourceType(rawFeed?.sourceType);
+
+  return {
+    feedUrl,
+    feedLabel: typeof rawFeed?.feedLabel === "string" && rawFeed.feedLabel.trim()
+      ? rawFeed.feedLabel.trim()
+      : buildFeedLabel(feedUrl),
+    sourceType,
+    regionTags: normalizeRegionTags(rawFeed?.regionTags),
+    trustTier: clampTrustTier(rawFeed?.trustTier, sourceType === "wire" ? 3 : 4),
+    firstHand: rawFeed?.firstHand === true,
+    basePriority: toFiniteNumber(rawFeed?.basePriority, sourceType === "wire" ? 20 : 70)
+  };
+}
+
+function fallbackFeedConfig(feedUrl) {
+  return normalizeFeedConfig({
+    feedUrl,
+    feedLabel: buildFeedLabel(feedUrl),
+    sourceType: "wire",
+    regionTags: ["context"],
+    trustTier: 3,
+    firstHand: false,
+    basePriority: 20
+  });
+}
+
+function buildFeedCatalog(rawFeeds) {
+  const requestedFeeds = parseFeedList(rawFeeds);
+  const sourceByUrl = new Map(SOURCE_CATALOG.map((feed) => [feed.feedUrl, normalizeFeedConfig(feed)]));
+
+  return requestedFeeds.map((feedUrl) => sourceByUrl.get(feedUrl) || fallbackFeedConfig(feedUrl));
 }
 
 function decodeEntities(value) {
@@ -205,7 +466,7 @@ function buildId(parts) {
   return createHash("sha1").update(parts.join("|")).digest("hex").slice(0, 16);
 }
 
-function toItem({ title, link, source, published, feedUrl, feedLabel, guid }) {
+function toItem({ title, link, source, published, guid, feed }) {
   const safeTitle = cleanText(title);
   const safeLink = normalizeUrl(cleanText(link));
   const safeSource = cleanText(source) || "Unknown";
@@ -223,12 +484,17 @@ function toItem({ title, link, source, published, feedUrl, feedLabel, guid }) {
     source: safeSource,
     publishedAt,
     publishedTs,
-    feedUrl,
-    feedLabel
+    feedUrl: feed.feedUrl,
+    feedLabel: feed.feedLabel,
+    sourceType: feed.sourceType,
+    regionTags: [...feed.regionTags],
+    trustTier: feed.trustTier,
+    firstHand: feed.firstHand,
+    basePriority: feed.basePriority
   };
 }
 
-function parseRss(xml, feedUrl, feedLabel) {
+function parseRss(xml, feed) {
   const channelBlock = xml.match(/<channel(?:\s[^>]*)?>([\s\S]*?)<\/channel>/i)?.[0] ?? "";
   const channelTitle = extractTagText(channelBlock, "title") || "RSS Feed";
   const blocks = extractBlocks(xml, "item");
@@ -241,14 +507,13 @@ function parseRss(xml, feedUrl, feedLabel) {
         source: extractTagText(block, "source") || channelTitle,
         published: extractTagText(block, "pubDate"),
         guid: extractTagText(block, "guid"),
-        feedUrl,
-        feedLabel
+        feed
       })
     )
     .filter(Boolean);
 }
 
-function parseAtom(xml, feedUrl, feedLabel) {
+function parseAtom(xml, feed) {
   const feedTitle = extractTagText(xml, "title") || "Atom Feed";
   const entries = extractBlocks(xml, "entry");
 
@@ -260,35 +525,34 @@ function parseAtom(xml, feedUrl, feedLabel) {
         source: extractTagText(entry, "source") || feedTitle,
         published: extractTagText(entry, "updated") || extractTagText(entry, "published"),
         guid: extractTagText(entry, "id"),
-        feedUrl,
-        feedLabel
+        feed
       })
     )
     .filter(Boolean);
 }
 
-function parseFeed(xml, feedUrl, feedLabel) {
+function parseFeed(xml, feed) {
   if (!xml || typeof xml !== "string") {
     return [];
   }
 
   if (/<rss\b/i.test(xml) || /<channel\b/i.test(xml)) {
-    return parseRss(xml, feedUrl, feedLabel);
+    return parseRss(xml, feed);
   }
 
   if (/<feed\b/i.test(xml) && /<entry\b/i.test(xml)) {
-    return parseAtom(xml, feedUrl, feedLabel);
+    return parseAtom(xml, feed);
   }
 
   return [];
 }
 
-async function fetchOneFeed(feedUrl, feedLabel, timeoutMs) {
+async function fetchOneFeed(feed, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(feedUrl, {
+    const response = await fetch(feed.feedUrl, {
       headers: {
         "user-agent": "MinasWatch/0.1 (+rss)"
       },
@@ -300,19 +564,24 @@ async function fetchOneFeed(feedUrl, feedLabel, timeoutMs) {
     }
 
     const xml = await response.text();
-    return parseFeed(xml, feedUrl, feedLabel);
+    return parseFeed(xml, feed);
   } finally {
     clearTimeout(timer);
   }
 }
 
+function sourceClassRank(item) {
+  const baseRank = SOURCE_TYPE_CLASS_ORDER[item.sourceType] ?? SOURCE_TYPE_CLASS_ORDER.wire;
+  return baseRank - (item.firstHand ? FIRST_HAND_CLASS_BOOST : 0);
+}
+
 function dedupeAndSort(items) {
   const seenLinks = new Set();
   const seenTitleSource = new Set();
-  const sorted = [...items].sort((a, b) => b.publishedTs - a.publishedTs);
-  const output = [];
+  const byRecency = [...items].sort((a, b) => b.publishedTs - a.publishedTs || b.basePriority - a.basePriority);
+  const deduped = [];
 
-  for (const item of sorted) {
+  for (const item of byRecency) {
     const normalizedTitle = item.title.toLowerCase().replace(/\s+/g, " ").trim();
     const normalizedSource = item.source.toLowerCase().replace(/\s+/g, " ").trim();
     const signature = `${normalizedSource}|${normalizedTitle}`;
@@ -325,20 +594,55 @@ function dedupeAndSort(items) {
       seenLinks.add(item.link);
     }
     seenTitleSource.add(signature);
-    output.push(item);
+    deduped.push(item);
   }
 
-  return output;
+  return deduped.sort((a, b) => {
+    const classDiff = sourceClassRank(a) - sourceClassRank(b);
+    if (classDiff !== 0) {
+      return classDiff;
+    }
+
+    if (a.sourceType === b.sourceType) {
+      if (b.publishedTs !== a.publishedTs) {
+        return b.publishedTs - a.publishedTs;
+      }
+      if (b.basePriority !== a.basePriority) {
+        return b.basePriority - a.basePriority;
+      }
+    }
+
+    if (b.basePriority !== a.basePriority) {
+      return b.basePriority - a.basePriority;
+    }
+    if (b.publishedTs !== a.publishedTs) {
+      return b.publishedTs - a.publishedTs;
+    }
+    if (b.trustTier !== a.trustTier) {
+      return b.trustTier - a.trustTier;
+    }
+
+    return a.id.localeCompare(b.id);
+  });
+}
+
+function feedSnapshot(feed) {
+  return {
+    feedUrl: feed.feedUrl,
+    feedLabel: feed.feedLabel,
+    sourceType: feed.sourceType,
+    regionTags: [...feed.regionTags],
+    trustTier: feed.trustTier,
+    firstHand: feed.firstHand,
+    basePriority: feed.basePriority
+  };
 }
 
 function snapshotShape(items, refreshedAt, errors, limit, feeds) {
   return {
     refreshedAt: refreshedAt ? new Date(refreshedAt).toISOString() : null,
     count: Math.min(limit, items.length),
-    feeds: feeds.map((feed) => ({
-      feedUrl: feed.feedUrl,
-      feedLabel: feed.feedLabel
-    })),
+    feeds: feeds.map(feedSnapshot),
     items: items.slice(0, limit).map((item) => ({
       id: item.id,
       title: item.title,
@@ -346,7 +650,12 @@ function snapshotShape(items, refreshedAt, errors, limit, feeds) {
       source: item.source,
       publishedAt: item.publishedAt,
       feedUrl: item.feedUrl,
-      feedLabel: item.feedLabel
+      feedLabel: item.feedLabel,
+      sourceType: item.sourceType,
+      regionTags: [...item.regionTags],
+      trustTier: item.trustTier,
+      firstHand: item.firstHand,
+      basePriority: item.basePriority
     })),
     errors
   };
@@ -357,11 +666,8 @@ export function createNewsService() {
   const maxItems = toPositiveInteger(process.env.NEWS_MAX_ITEMS, 50);
   const fetchTimeoutMs = toPositiveInteger(process.env.NEWS_FETCH_TIMEOUT_MS, 7000);
   const cacheTtlMs = toPositiveInteger(process.env.NEWS_CACHE_TTL_MS, refreshMs);
-  const feedUrls = parseFeedList(process.env.NEWS_FEEDS);
-  const feedCatalog = feedUrls.map((feedUrl) => ({
-    feedUrl,
-    feedLabel: buildFeedLabel(feedUrl)
-  }));
+  const feedCatalog = buildFeedCatalog(process.env.NEWS_FEEDS);
+  const feedUrls = feedCatalog.map((feed) => feed.feedUrl);
 
   let timer = null;
   let refreshing = null;
@@ -386,9 +692,7 @@ export function createNewsService() {
     lastRefreshAttemptAt = Date.now();
 
     refreshing = (async () => {
-      const results = await Promise.allSettled(
-        feedCatalog.map((feed) => fetchOneFeed(feed.feedUrl, feed.feedLabel, fetchTimeoutMs))
-      );
+      const results = await Promise.allSettled(feedCatalog.map((feed) => fetchOneFeed(feed, fetchTimeoutMs)));
       const nextErrors = [];
       const mergedItems = [];
 
@@ -404,6 +708,9 @@ export function createNewsService() {
         nextErrors.push({
           feedUrl: feed.feedUrl,
           feedLabel: feed.feedLabel,
+          sourceType: feed.sourceType,
+          firstHand: feed.firstHand,
+          trustTier: feed.trustTier,
           message: result.reason?.message || "feed_fetch_failed"
         });
       }

@@ -1,10 +1,112 @@
 const STORAGE_KEY = "minas-watch.source-controls.v1";
 
+const SOURCE_TYPE_LABELS = {
+  official: "Official",
+  osint_social: "OSINT Social",
+  sensor: "Sensor",
+  wire: "Wire"
+};
+
 function defaultPreferences() {
   return {
     feedSelections: {},
     preferredOutlets: "",
-    preferredKeywords: ""
+    preferredKeywords: "",
+    firstHandOnly: false
+  };
+}
+
+function toFiniteNumber(raw, fallback) {
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function toTrustTier(raw, fallback = 3) {
+  const value = Number(raw);
+  if (!Number.isInteger(value)) {
+    return fallback;
+  }
+
+  if (value < 1) {
+    return 1;
+  }
+
+  if (value > 5) {
+    return 5;
+  }
+
+  return value;
+}
+
+function normalizeSourceType(raw) {
+  return Object.prototype.hasOwnProperty.call(SOURCE_TYPE_LABELS, raw) ? raw : "wire";
+}
+
+function normalizeRegionTags(raw) {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const seen = new Set();
+  const tags = [];
+
+  for (const value of raw) {
+    if (typeof value !== "string") {
+      continue;
+    }
+
+    const tag = value.trim().toLowerCase();
+    if (!tag || seen.has(tag)) {
+      continue;
+    }
+
+    seen.add(tag);
+    tags.push(tag);
+  }
+
+  return tags;
+}
+
+function normalizeFeedRecord(rawFeed) {
+  const feedUrl = typeof rawFeed?.feedUrl === "string" ? rawFeed.feedUrl : "";
+  if (!feedUrl) {
+    return null;
+  }
+
+  return {
+    feedUrl,
+    feedLabel: typeof rawFeed?.feedLabel === "string" && rawFeed.feedLabel.trim() ? rawFeed.feedLabel : feedUrl,
+    sourceType: normalizeSourceType(rawFeed?.sourceType),
+    regionTags: normalizeRegionTags(rawFeed?.regionTags),
+    trustTier: toTrustTier(rawFeed?.trustTier),
+    firstHand: rawFeed?.firstHand === true,
+    basePriority: toFiniteNumber(rawFeed?.basePriority, 0)
+  };
+}
+
+function normalizeItemRecord(rawItem, feedMeta) {
+  const feedUrl = typeof rawItem?.feedUrl === "string" && rawItem.feedUrl ? rawItem.feedUrl : feedMeta?.feedUrl || "";
+  if (!feedUrl) {
+    return null;
+  }
+
+  return {
+    id: rawItem?.id,
+    title: rawItem?.title,
+    link: rawItem?.link,
+    source: rawItem?.source,
+    publishedAt: rawItem?.publishedAt,
+    feedUrl,
+    feedLabel:
+      (typeof rawItem?.feedLabel === "string" && rawItem.feedLabel) ||
+      feedMeta?.feedLabel ||
+      feedUrl ||
+      "Feed",
+    sourceType: normalizeSourceType(rawItem?.sourceType || feedMeta?.sourceType),
+    regionTags: normalizeRegionTags(Array.isArray(rawItem?.regionTags) ? rawItem.regionTags : feedMeta?.regionTags),
+    trustTier: toTrustTier(rawItem?.trustTier ?? feedMeta?.trustTier),
+    firstHand: typeof rawItem?.firstHand === "boolean" ? rawItem.firstHand : feedMeta?.firstHand === true,
+    basePriority: toFiniteNumber(rawItem?.basePriority ?? feedMeta?.basePriority, 0)
   };
 }
 
@@ -29,7 +131,8 @@ function loadPreferences() {
     return {
       feedSelections: safeSelections,
       preferredOutlets: typeof parsed?.preferredOutlets === "string" ? parsed.preferredOutlets : "",
-      preferredKeywords: typeof parsed?.preferredKeywords === "string" ? parsed.preferredKeywords : ""
+      preferredKeywords: typeof parsed?.preferredKeywords === "string" ? parsed.preferredKeywords : "",
+      firstHandOnly: parsed?.firstHandOnly === true
     };
   } catch {
     return defaultPreferences();
@@ -51,6 +154,7 @@ const errorBanner = document.querySelector("#error-banner");
 const feedTogglesRoot = document.querySelector("#feed-toggles");
 const preferredOutletsInput = document.querySelector("#preferred-outlets");
 const preferredKeywordsInput = document.querySelector("#preferred-keywords");
+const firstHandOnlyToggle = document.querySelector("#first-hand-only");
 const resetControlsButton = document.querySelector("#reset-controls");
 
 function savePreferences() {
@@ -164,14 +268,12 @@ function normalizeFeeds(payloadFeeds, payloadItems) {
   const feedMap = new Map();
 
   for (const feed of payloadFeeds ?? []) {
-    if (!feed?.feedUrl) {
+    const normalizedFeed = normalizeFeedRecord(feed);
+    if (!normalizedFeed) {
       continue;
     }
 
-    feedMap.set(feed.feedUrl, {
-      feedUrl: feed.feedUrl,
-      feedLabel: feed.feedLabel || feed.feedUrl
-    });
+    feedMap.set(normalizedFeed.feedUrl, normalizedFeed);
   }
 
   for (const item of payloadItems ?? []) {
@@ -179,10 +281,19 @@ function normalizeFeeds(payloadFeeds, payloadItems) {
       continue;
     }
 
-    feedMap.set(item.feedUrl, {
+    const normalizedFeed = normalizeFeedRecord({
       feedUrl: item.feedUrl,
-      feedLabel: item.feedLabel || item.feedUrl
+      feedLabel: item.feedLabel,
+      sourceType: item.sourceType,
+      regionTags: item.regionTags,
+      trustTier: item.trustTier,
+      firstHand: item.firstHand,
+      basePriority: item.basePriority
     });
+
+    if (normalizedFeed) {
+      feedMap.set(normalizedFeed.feedUrl, normalizedFeed);
+    }
   }
 
   return Array.from(feedMap.values());
@@ -191,13 +302,12 @@ function normalizeFeeds(payloadFeeds, payloadItems) {
 function hydrateFromPayload(payload) {
   const incomingItems = payload.items ?? [];
   const incomingFeeds = normalizeFeeds(payload.feeds, incomingItems);
-  const feedLabelByUrl = new Map(incomingFeeds.map((feed) => [feed.feedUrl, feed.feedLabel]));
+  const feedByUrl = new Map(incomingFeeds.map((feed) => [feed.feedUrl, feed]));
 
   state.feeds = incomingFeeds;
-  state.items = incomingItems.map((item) => ({
-    ...item,
-    feedLabel: item.feedLabel || feedLabelByUrl.get(item.feedUrl) || item.feedUrl || "Feed"
-  }));
+  state.items = incomingItems
+    .map((item) => normalizeItemRecord(item, feedByUrl.get(item.feedUrl)))
+    .filter(Boolean);
   state.refreshedAt = payload.refreshedAt ?? null;
 }
 
@@ -207,6 +317,7 @@ function rankVisibleItems() {
 
   return state.items
     .filter((item) => isFeedActive(item.feedUrl))
+    .filter((item) => !state.preferences.firstHandOnly || item.firstHand === true)
     .map((item, index) => {
       const outletMatches = countMatches(item.source || "", preferredOutlets);
       const keywordMatches = countMatches(item.title || "", preferredKeywords);
@@ -220,6 +331,10 @@ function rankVisibleItems() {
       };
     })
     .sort((a, b) => b._score - a._score || b._timestamp - a._timestamp || a._index - b._index);
+}
+
+function formatSourceType(sourceType) {
+  return SOURCE_TYPE_LABELS[normalizeSourceType(sourceType)] || "Wire";
 }
 
 function setStatus(label, className) {
@@ -264,7 +379,7 @@ function renderFeedControls() {
     });
 
     const text = document.createElement("span");
-    text.textContent = feed.feedLabel;
+    text.textContent = `${feed.feedLabel} (${formatSourceType(feed.sourceType)} | T${feed.trustTier})`;
 
     label.append(checkbox, text);
     feedTogglesRoot.appendChild(label);
@@ -284,7 +399,11 @@ function renderHeadlines() {
   if (visibleItems.length === 0) {
     const empty = document.createElement("li");
     empty.className = "headline";
-    empty.textContent = state.items.length > 0 ? "No headlines match the current feed selection." : "No headlines available yet.";
+    empty.textContent = state.items.length > 0
+      ? state.preferences.firstHandOnly
+        ? "No first-hand headlines match the current feed selection."
+        : "No headlines match the current feed selection."
+      : "No headlines available yet.";
     newsList.appendChild(empty);
     return;
   }
@@ -298,6 +417,20 @@ function renderHeadlines() {
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.textContent = item.title;
+
+    const badges = document.createElement("div");
+    badges.className = "headline-badges";
+
+    const sourceTypeBadge = document.createElement("span");
+    sourceTypeBadge.className = "badge badge-source";
+    sourceTypeBadge.dataset.sourceType = normalizeSourceType(item.sourceType);
+    sourceTypeBadge.textContent = formatSourceType(item.sourceType);
+
+    const trustBadge = document.createElement("span");
+    trustBadge.className = "badge badge-trust";
+    trustBadge.textContent = `T${toTrustTier(item.trustTier)}`;
+
+    badges.append(sourceTypeBadge, trustBadge);
 
     const meta = document.createElement("p");
     meta.className = "meta";
@@ -313,7 +446,7 @@ function renderHeadlines() {
     published.title = item.publishedAt || "";
 
     meta.append(source, feed, published);
-    row.append(link, meta);
+    row.append(link, badges, meta);
     newsList.appendChild(row);
   }
 }
@@ -328,6 +461,9 @@ function resetPreferences() {
   state.preferences = defaultPreferences();
   preferredOutletsInput.value = "";
   preferredKeywordsInput.value = "";
+  if (firstHandOnlyToggle) {
+    firstHandOnlyToggle.checked = false;
+  }
   savePreferences();
   renderFeedControls();
   renderHeadlines();
@@ -362,6 +498,9 @@ function connectSse() {
 
 preferredOutletsInput.value = state.preferences.preferredOutlets;
 preferredKeywordsInput.value = state.preferences.preferredKeywords;
+if (firstHandOnlyToggle) {
+  firstHandOnlyToggle.checked = state.preferences.firstHandOnly;
+}
 
 preferredOutletsInput.addEventListener("input", (event) => {
   state.preferences.preferredOutlets = event.target.value;
@@ -374,6 +513,14 @@ preferredKeywordsInput.addEventListener("input", (event) => {
   savePreferences();
   renderHeadlines();
 });
+
+if (firstHandOnlyToggle) {
+  firstHandOnlyToggle.addEventListener("change", (event) => {
+    state.preferences.firstHandOnly = event.target.checked;
+    savePreferences();
+    renderHeadlines();
+  });
+}
 
 resetControlsButton.addEventListener("click", () => {
   resetPreferences();
