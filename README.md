@@ -21,6 +21,15 @@ npm run start
 Open:
 - `http://localhost:8787/` (live news UI)
 
+## GitHub Pages
+This repo now includes static files at:
+- `/index.html` (root Pages source)
+- `/docs/index.html` (docs Pages source)
+
+So GitHub Pages will render the UI shell.  
+Note: live headlines require the Node API endpoints (`/api/news` and `/api/news/stream`).
+On GitHub Pages alone, the app shows an offline notice unless you deploy the backend separately.
+
 Core endpoints:
 - `GET /health`
 - `GET /schemas`
