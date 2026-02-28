@@ -91,7 +91,7 @@ Copy `.env.example` to `.env` and adjust as needed.
 - `NEWS_REFRESH_MS`: background feed refresh cadence (default `120000`)
 - `NEWS_CACHE_TTL_MS`: staleness window before refresh (default `120000`)
 - `NEWS_FETCH_TIMEOUT_MS`: per-feed fetch timeout (default `7000`)
-- `NEWS_MAX_ITEMS`: max deduped items retained/served (default `50`)
+- `NEWS_MAX_ITEMS`: max deduped items retained/served (default `1000`)
 - `NEWS_FEEDS`: optional comma-separated RSS feed URLs to override the curated catalog selection
 
 ## Next implementation slice

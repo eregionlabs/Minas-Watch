@@ -712,7 +712,7 @@ function snapshotShape(items, refreshedAt, errors, limit, feeds) {
 
 export function createNewsService() {
   const refreshMs = toPositiveInteger(process.env.NEWS_REFRESH_MS, 120000);
-  const maxItems = toPositiveInteger(process.env.NEWS_MAX_ITEMS, 50);
+  const maxItems = toPositiveInteger(process.env.NEWS_MAX_ITEMS, 1000);
   const fetchTimeoutMs = toPositiveInteger(process.env.NEWS_FETCH_TIMEOUT_MS, 7000);
   const cacheTtlMs = toPositiveInteger(process.env.NEWS_CACHE_TTL_MS, refreshMs);
   const feedCatalog = buildFeedCatalog(process.env.NEWS_FEEDS);
