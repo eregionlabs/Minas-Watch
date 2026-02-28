@@ -403,7 +403,9 @@ function renderFeedControls() {
 function renderHeadlines() {
   const visibleItems = rankVisibleItems();
 
-  headlineCount.textContent = `${visibleItems.length} ${visibleItems.length === 1 ? "item" : "items"}`;
+  if (headlineCount) {
+    headlineCount.textContent = `${visibleItems.length} ${visibleItems.length === 1 ? "item" : "items"}`;
+  }
   refreshTime.textContent = state.refreshedAt
     ? `Last refresh: ${new Date(state.refreshedAt).toLocaleString()}`
     : "Last refresh: --";
