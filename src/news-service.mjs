@@ -139,8 +139,8 @@ const SOURCE_CATALOG = [
     basePriority: 34
   },
   {
-    feedUrl: "http://feeds.reuters.com/Reuters/worldNews",
-    feedLabel: "Reuters - World News",
+    feedUrl: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+    feedLabel: "NYT - World",
     sourceType: "wire",
     regionTags: ["world", "context"],
     trustTier: 4,
@@ -148,8 +148,8 @@ const SOURCE_CATALOG = [
     basePriority: 32
   },
   {
-    feedUrl: "https://feeds.apnews.com/rss/apf-topnews",
-    feedLabel: "AP - Top News",
+    feedUrl: "https://www.theguardian.com/world/rss",
+    feedLabel: "Guardian - World",
     sourceType: "wire",
     regionTags: ["world", "context"],
     trustTier: 4,
