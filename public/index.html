@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Minas Watch | War News Stream</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Minas Watch</p>
+          <h1>Israel/Iran War News Stream</h1>
+        </div>
+        <div class="status-wrap">
+          <span id="connection-status" class="status disconnected">Connecting...</span>
+          <p id="refresh-time">Last refresh: --</p>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Top Headlines</h2>
+          <span id="headline-count">0 items</span>
+        </div>
+        <p id="error-banner" class="error-banner hidden"></p>
+        <ol id="news-list" class="news-list"></ol>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

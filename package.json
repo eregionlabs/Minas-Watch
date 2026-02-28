@@ -5,6 +5,7 @@
   "description": "Minas Watch MVP bootstrap: schema-first intelligence pipeline scaffolding",
   "type": "module",
   "scripts": {
+    "start": "node src/server.mjs",
     "dev": "node src/server.mjs",
     "validate:schemas": "node scripts/validate-schemas.mjs",
     "validate:fixtures": "node scripts/validate-fixtures.mjs",
