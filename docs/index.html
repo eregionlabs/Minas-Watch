@@ -20,6 +20,14 @@
       </header>
 
       <section class="dashboard">
+        <section class="panel headlines-panel">
+          <div class="panel-head">
+            <h2>Top Headlines</h2>
+          </div>
+          <p id="error-banner" class="error-banner hidden"></p>
+          <ol id="news-list" class="news-list"></ol>
+        </section>
+
         <aside class="panel controls-panel">
           <div class="panel-head">
             <h2>Source Control</h2>
@@ -66,14 +74,6 @@
 
           <button id="reset-controls" class="reset-button" type="button">Reset preferences</button>
         </aside>
-
-        <section class="panel headlines-panel">
-          <div class="panel-head">
-            <h2>Top Headlines</h2>
-          </div>
-          <p id="error-banner" class="error-banner hidden"></p>
-          <ol id="news-list" class="news-list"></ol>
-        </section>
       </section>
     </main>
     <script src="/config.js"></script>
